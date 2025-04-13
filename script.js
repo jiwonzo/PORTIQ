@@ -1,109 +1,113 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const counter = document.querySelector(".counter");
-    const finalText = "PORTAL 001";
+  const textEl = document.getElementById("text-display");
 
-    function randomString(length) {
-        let result = "";
-        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        for (let i = 0; i < length; i++) {
-            result += characters.charAt(Math.floor(Math.random() * characters.length));
+  function typeText(text, speed = 80) {
+    return new Promise((resolve) => {
+      let i = 0;
+      const interval = setInterval(() => {
+        textEl.textContent += text[i];
+        i++;
+        if (i >= text.length) {
+          clearInterval(interval);
+          setTimeout(resolve, 800);
         }
-        return result;
-    }
-
-    // 1. 무작위 문자 출력 (PORTAL 001 길이만큼)
-    function animateInitialRandom(duration = 1000, intervalDelay = 80, callback) {
-        const startTime = Date.now();
-        const interval = setInterval(() => {
-            counter.textContent = randomString(finalText.length);
-            if (Date.now() - startTime > duration) {
-                clearInterval(interval);
-                if (callback) callback();
-            }
-        }, intervalDelay);
-    }
-
-    // 2. 무작위 문자 → PORTAL 001로 한 글자씩 전환
-    function animateRandomToFinal(text, steps = 20, delay = 80, callback) {
-        let index = 0;
-        const interval = setInterval(() => {
-            let display = "";
-            for (let i = 0; i < text.length; i++) {
-                if (i <= index) {
-                    display += text[i];
-                } else {
-                    display += Math.random().toString(36).charAt(2).toUpperCase();
-                }
-            }
-            counter.textContent = display;
-
-            index++;
-            if (index >= text.length) {
-                clearInterval(interval);
-                if (callback) callback();
-            }
-        }, delay);
-    }
-
-    // 3. PORTAL 001 → 오른쪽에서부터 글자 하나씩 삭제
-    function removeLettersTo(targetText, callback) {
-        let current = counter.textContent;
-
-        const interval = setInterval(() => {
-            if (current.length > targetText.length) {
-                current = current.slice(0, -1);
-                counter.textContent = current;
-            } else {
-                clearInterval(interval);
-                // 4. 삭제 완료 후 약간의 멈춤
-                setTimeout(() => {
-                    if (callback) callback();
-                }, 820);
-            }
-        }, 100);
-    }
-
-    // 5. APOCALYPSE 출력: 한 번에 출력 + 애니메이션 클래스 부여
-    function showApocalypseText() {
-        counter.textContent = "APOCALYPSE";
-        counter.classList.add("apocalypse-reveal");
-
-    // 사운드 재생
-    const sound = document.getElementById("apocalypse-sound");
-    if (sound) {
-        sound.currentTime = 0; // 재생 위치 초기화
-        sound.play().catch(e => console.error("사운드 재생 오류:", e));
-    }
-
-
-    // 인트로 끝나고 본문 보이게
-        setTimeout(() => {
-        document.body.classList.remove("intro-only");  // 인트로 숨김 해제
-        document.body.classList.add("loaded");         // 본문 보이게
-    }, 2000); // 2초 후 페이지 전개
-}
-
-    // 전체 시퀀스 실행
-    animateInitialRandom(1000, 80, () => {
-        animateRandomToFinal(finalText, 20, 80, () => {
-            removeLettersTo("PORTAL 001", () => {
-                showApocalypseText();
-            });
-        });
+      }, speed);
     });
+  }
 
+  function clearText(immediate = true) {
+    return new Promise((resolve) => {
+      if (immediate) {
+        textEl.textContent = "";
+        resolve();
+      } else {
+        let content = textEl.textContent;
+        const interval = setInterval(() => {
+          content = content.slice(0, -1);
+          textEl.textContent = content;
+          if (content.length === 0) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 50);
+      }
+    });
+  }
 
-    // 🔥 여기에 sparkle 코드 넣기 👇
-const glowContainer = document.querySelector('.portal-glow');
-const sparkleCount = 150;
+  function scrambleText(finalText) {
+    return new Promise((resolve) => {
+      let index = 0;
+      const interval = setInterval(() => {
+        let output = "";
+        for (let i = 0; i < finalText.length; i++) {
+          output += i <= index ? finalText[i] : randomChar();
+        }
+        textEl.textContent = output;
+        index++;
+        if (index >= finalText.length) {
+          clearInterval(interval);
+          setTimeout(resolve, 1100);
+        }
+      }, 100);
+    });
+  }
 
-for (let i = 0; i < sparkleCount; i++) {
-    const dot = document.createElement('span');
-    dot.className = 'sparkle';
-    dot.style.top = `${Math.random() * 100}vh`;
-    dot.style.left = `${Math.random() * 100}vw`;
-    dot.style.animationDelay = `${Math.random() * 2}s`;
-    dot.style.opacity = Math.random();
-    glowContainer.appendChild(dot);
-}
+  function randomChar() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    return chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function animateSequence() {
+    await typeText("Welcome, traveler.");
+    await clearText(true);
+
+    await typeText("You're entering...");
+    // await clearText(true);
+
+    await scrambleText("PORTAL 001");
+    await wait(500);
+    // await clearText(true);
+
+    showApocalypseText();         // 고정된 'APOCALYPSE' 출력
+    await wait(1000);             // 1초 기다림
+    swingApocalypseEnding();      // YPSE만 덜렁이게
+  }
+
+  // 'APOCALYPSE'를 span으로 각각 출력
+  function showApocalypseText() {
+    const text = "APOCALYPSE";
+    textEl.innerHTML = "";
+    for (let i = 0; i < text.length; i++) {
+      const span = document.createElement("span");
+      span.textContent = text[i];
+      span.classList.add("apocalypse-letter");
+      textEl.appendChild(span);
+    }
+  }
+
+  // 'YPSE'만 덜렁이게
+  function swingApocalypseEnding() {
+    const spans = textEl.querySelectorAll(".apocalypse-letter");
+    for (let i = 5; i < spans.length; i++) {
+      spans[i].classList.add("swing-letter");
+    }
+  }
+
+  // 별 생성
+  const starContainer = document.querySelector(".stars-bg");
+  for (let i = 0; i < 80; i++) {
+    const star = document.createElement("div");
+    star.className = "star";
+    star.style.top = `${Math.random() * 100}vh`;
+    star.style.left = `${Math.random() * 100}vw`;
+    star.style.animationDuration = `${1.5 + Math.random() * 3}s`;
+    star.style.opacity = Math.random();
+    starContainer.appendChild(star);
+  }
+
+  animateSequence();
 });
